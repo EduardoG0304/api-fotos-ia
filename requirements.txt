@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+pydantic
+requests
+numpy
+opencv-python-headless
+easyocr
+face_recognition
