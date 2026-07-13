@@ -1,9 +1,13 @@
-FROM python:3.9
+FROM debian:bullseye-slim
 
 WORKDIR /app
 
-# Instalar dependencias del sistema necesarias
+# 1. Instalamos Python, pip y las librerías precompiladas del sistema.
+# 'python3-dlib' es la clave mágica: instala dlib precompilado en segundos sin usar RAM.
 RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    python3-dlib \
     build-essential \
     cmake \
     libopenblas-dev \
@@ -12,21 +16,13 @@ RUN apt-get update && apt-get install -y \
     libgtk-3-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# --- AQUÍ ESTÁ LA SOLUCIÓN AL ERROR DE MEMORIA ---
-# Estas dos variables obligan al servidor a usar un solo núcleo de procesamiento
-# durante la instalación de dlib. Esto evita el pico de consumo de RAM.
-ENV CMAKE_BUILD_PARALLEL_LEVEL=1
-ENV MAKEFLAGS="-j1"
-
 COPY requirements.txt .
 
-# Primero instalamos solo dlib de forma aislada, sin usar caché de disco
-RUN pip install --no-cache-dir dlib==19.24.2
-
-# Luego instalamos el resto de tus librerías
-RUN pip install --no-cache-dir -r requirements.txt
+# 2. Instalamos tus dependencias de Python.
+# Pip detectará que dlib ya está instalado a nivel de sistema operativo y no intentará compilarlo.
+RUN pip3 install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Render asigna automáticamente un puerto, le decimos a FastAPI que lo escuche
+# 3. Arrancamos el servidor
 CMD ["sh", "-c", "uvicorn app:app --host 0.0.0.0 --port ${PORT:-10000}"]
